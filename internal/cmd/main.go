@@ -1,6 +1,7 @@
 package main
 
 import (
+	"dhakalu/monofile/internal/builders"
 	"dhakalu/monofile/internal/model"
 	mr "dhakalu/monofile/internal/monorepo"
 	"fmt"
@@ -25,14 +26,14 @@ Usage:
 	monofile <command> [arguments]
 				
 Commands:
-	scan   Scan the monorepo and list all projects
+	build   Build all projects in the monorepo
 			`)
 		},
 	}
 
-	var scanCmd = &cobra.Command{
-		Use:   "scan",
-		Short: "Scan the monorepo and list all projects",
+	var buildCmd = &cobra.Command{
+		Use:   "build",
+		Short: "build all projects in the monorepo",
 		Run: func(cmd *cobra.Command, args []string) {
 			cwd, err := os.Getwd()
 			slog.Info("Scanning the monorepo", slog.String("root", cwd))
@@ -51,16 +52,20 @@ Commands:
 				slog.Error("Error scanning the monorepo", slog.Any("error", err))
 				os.Exit(1)
 			}
-			slog.Info("Scan completed. Projects found:", slog.Int("count", len(scanner.ProjectsMap)))
-			for path, project := range scanner.ProjectsMap {
-				slog.Info("Project found", slog.String("path", path), slog.String("name", project.Name), slog.Any("language", project.Language))
-				for _, dep := range project.Dependencies {
-					slog.Info("Dependency found", slog.String("name", dep.Name), slog.String("type", string(dep.Type)), slog.String("version", dep.Version))
+			for _, p := range scanner.ProjectsMap {
+				builder := builders.GetBuilderForLanguage(p.Language)
+				if builder == nil {
+					slog.Warn("No builder found for language", slog.String("language", string(p.Language)))
+					continue
+				}
+				info := builder.Build(p)
+				if info.Status == builders.BuildStatusFailed {
+					slog.Error("Error building ", slog.String("project", p.Path))
 				}
 			}
 		},
 	}
-	rootCmd.AddCommand(scanCmd)
+	rootCmd.AddCommand(buildCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		slog.Error("Error executing command", slog.Any("error", err))
