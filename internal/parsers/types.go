@@ -19,6 +19,7 @@ const (
 	Javascript SourceLang = 3
 	Go         SourceLang = 4
 )
+
 // Configuration of each project in monorepo, including its dependencies and their versions.
 // Configuration is parsed from the project files (e.g., .csproj for .NET projects)
 // and stored in a map for easy access.
