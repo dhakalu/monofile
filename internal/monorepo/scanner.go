@@ -1,7 +1,6 @@
 package monorepo
 
 import (
-	"dhakalu/monofile/internal/model"
 	"dhakalu/monofile/internal/parsers"
 	"io/fs"
 	"log/slog"
@@ -12,36 +11,47 @@ import (
 // Scanner scans the monorepo and returns a map of projects.
 
 type Scanner struct {
-	RepoMetadata model.RepoMetadata
+	FileSystem fs.FS
 }
 
-func NewScanner(repoRoot string) (*Scanner, error) {
-	if repoRoot == "" {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return nil, err
+type Option func(*Scanner)
+
+func WithFS(fileSystem fs.FS) Option {
+	return func(s *Scanner) {
+		s.FileSystem = fileSystem
+	}
+}
+
+func NewScanner(repoRoot string, opts ...Option) (*Scanner, error) {
+	sc := &Scanner{}
+	for _, opt := range opts {
+		opt(sc)
+	}
+
+	if sc.FileSystem == nil {
+		if repoRoot == "" {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return nil, err
+			}
+			repoRoot = cwd
 		}
-		repoRoot = cwd
+		dfs := os.DirFS(repoRoot)
+
+		sc.FileSystem = dfs
 	}
-	dfs := os.DirFS(repoRoot)
-	md := model.RepoMetadata{
-		FileSystem: dfs,
-		Root:       repoRoot,
-	}
-	return &Scanner{
-		RepoMetadata: md,
-	}, nil
+	return sc, nil
 }
 
 func (s *Scanner) Scan() (map[string]parsers.ProjectConfiguration, error) {
 
 	projectsMap := make(map[string]parsers.ProjectConfiguration)
-	return projectsMap, fs.WalkDir(s.RepoMetadata.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+	return projectsMap, fs.WalkDir(s.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && isProjectFile(path) {
-			project, err := getProjectConfigurationForPath(s.RepoMetadata.FileSystem, path)
+			project, err := getProjectConfigurationForPath(s.FileSystem, path)
 			if err != nil {
 				slog.Error("error parsing project file", "path", path, "error", err)
 				return err
