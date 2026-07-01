@@ -61,8 +61,8 @@ func TestGetProjectConfigurationForPath(t *testing.T) {
 	`,
 			expectErr: false,
 			expected: parsers.ProjectConfiguration{
-				Name: "",
-				Path: "example/project-1/file.csproj",
+				Name:     "",
+				Path:     "example/project-1/file.csproj",
 				Language: parsers.Dotnet,
 				Dependencies: []parsers.Dependency{
 					{

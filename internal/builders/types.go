@@ -2,7 +2,6 @@ package builders
 
 import "dhakalu/monofile/internal/parsers"
 
-
 type BuildStatus int
 
 const (

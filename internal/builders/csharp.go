@@ -9,7 +9,6 @@ import (
 )
 
 type DotnetBuilder struct {
-
 }
 
 func (b *DotnetBuilder) Build(p parsers.ProjectConfiguration) BuildInfo {

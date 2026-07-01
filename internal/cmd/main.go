@@ -29,7 +29,6 @@ Commands:
 		},
 	}
 
-	
 	rootCmd.AddCommand(buildCmd())
 	rootCmd.AddCommand(checkCmd())
 
