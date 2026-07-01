@@ -12,3 +12,16 @@ This is work in progress and there are no commands available as of now.
 - **test**: Tests all the projects (or selected)
 - **changelog**: Allows to manage the changelogs for every git commits/push
 - **dep-check**: Makes sure all the dependencies in the monorepo are of same version
+
+## Supported Languages
+
+| Language | Package managers | Status | Notes  | 
+|----------|------------------|--------|--------| 
+| **csharp**| `dotnet` | ✅ Available | Core projects only. Dotnet framework is not supported.|
+| **javascript** | `npm`, `pnpm`, `yarn`| ⏳ Coming soon | |
+| **python** | `uv` |  ⏳ Coming soon | |
+
+## Prerequisite
+
+1. All language SDKs pre installed 
+2. All package managers are pre installed 
