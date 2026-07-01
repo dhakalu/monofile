@@ -22,8 +22,8 @@ func NewScanner(repoMetadata model.RepoMetadata) *Scanner {
 	}
 }
 
-func (s *Scanner) Scan() {
-	fs.WalkDir(s.RepoMetadata.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+func (s *Scanner) Scan() error {
+	return fs.WalkDir(s.RepoMetadata.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
