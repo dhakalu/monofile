@@ -10,14 +10,14 @@ import "io/fs"
 // them into a standardized format that can be used by the monorepo
 // scanner.
 
-type SourceLang int
+type SourceLang string
 
 const (
-	None       SourceLang = iota
-	Python     SourceLang = 1
-	DotNet     SourceLang = 2
-	Javascript SourceLang = 3
-	Go         SourceLang = 4
+	None       SourceLang = "none"
+	Python     SourceLang = "python"
+	Dotnet     SourceLang = "dotnet"
+	Javascript SourceLang = "javascript"
+	Go         SourceLang = "go"
 )
 
 // Configuration of each project in monorepo, including its dependencies and their versions.

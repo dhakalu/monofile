@@ -74,7 +74,7 @@ func (dps DotnetProjectParser) Parse(fileSystem fs.FS, path string) (*ProjectCon
 		Name:         project.RootNamespace,
 		Path:         path,
 		Dependencies: deps,
-		Language:     DotNet,
+		Language:     Dotnet,
 	}
 
 	return config, nil

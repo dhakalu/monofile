@@ -30,7 +30,7 @@ func TestGetProjectFromPath(t *testing.T) {
 	expected := ProjectConfiguration{
 		Name:     "",
 		Path:     "example/project-1/file.csproj",
-		Language: DotNet,
+		Language: Dotnet,
 		Dependencies: []Dependency{
 			{
 				Name:    "Newtonsoft.Json",
