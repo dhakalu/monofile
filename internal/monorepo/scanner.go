@@ -27,8 +27,8 @@ func (s *Scanner) Scan() error {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() {
-			project, err := getLangByFileName(s.RepoMetadata.FileSystem, path)
+		if !d.IsDir() && isProjectFile(path) {
+			project, err := getProjectConfigurationForPath(s.RepoMetadata.FileSystem, path)
 			if err != nil {
 				slog.Error("error parsing project file", "path", path, "error", err)
 				return err
@@ -41,23 +41,30 @@ func (s *Scanner) Scan() error {
 	})
 }
 
-func getLangByFileName(fs fs.FS, path string) (*parsers.ProjectConfiguration, error) {
-	filename := filepath.Base(path)
-	ext := filepath.Ext(filename)
-	switch ext {
-	case ".csproj":
-		parser := parsers.DotnetProjectParser{}
-		return parser.Parse(fs, path)
-	case ".json":
-		if filename == "package.json" {
-			return &parsers.ProjectConfiguration{
-				Name:     filename,
-				Path:     filepath.Dir(filename),
-				Language: parsers.Javascript,
-			}, nil
+func isProjectFile(path string) bool {
+	var projectFiles = []string{
+		"package.json",
+		"*.csproj",
+		"pyproject.toml",
+	}
+	for _, pattern := range projectFiles {
+		matched, err := filepath.Match(pattern, filepath.Base(path))
+		if err != nil {
+			slog.Error("error matching pattern", "pattern", pattern, "path", path, "error", err)
+			return false
 		}
-		return nil, nil
-	default:
+		if matched {
+			return true
+		}
+	}
+	return false
+}
+
+func getProjectConfigurationForPath(fs fs.FS, path string) (*parsers.ProjectConfiguration, error) {
+	parser := parsers.GetParserByFilePath(path)
+	if (parser == nil) {
+		slog.Warn("no parser found for file", "path", path)
 		return nil, nil
 	}
+	return parser.Parse(fs, path)
 }
