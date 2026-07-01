@@ -5,6 +5,7 @@ import (
 	"dhakalu/monofile/internal/parsers"
 	"io/fs"
 	"log/slog"
+	"os"
 	"path/filepath"
 )
 
@@ -12,18 +13,30 @@ import (
 
 type Scanner struct {
 	RepoMetadata model.RepoMetadata
-	ProjectsMap  map[string]parsers.ProjectConfiguration
 }
 
-func NewScanner(repoMetadata model.RepoMetadata) *Scanner {
-	return &Scanner{
-		RepoMetadata: repoMetadata,
-		ProjectsMap:  make(map[string]parsers.ProjectConfiguration),
+func NewScanner(repoRoot string) (*Scanner, error) {
+	if repoRoot == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+		repoRoot = cwd
 	}
+	dfs := os.DirFS(repoRoot)
+	md := model.RepoMetadata{
+		FileSystem: dfs,
+		Root:       repoRoot,
+	}
+	return &Scanner{
+		RepoMetadata: md,
+	}, nil
 }
 
-func (s *Scanner) Scan() error {
-	return fs.WalkDir(s.RepoMetadata.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+func (s *Scanner) Scan() (map[string]parsers.ProjectConfiguration, error) {
+
+	projectsMap := make(map[string]parsers.ProjectConfiguration)
+	return projectsMap, fs.WalkDir(s.RepoMetadata.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -34,7 +47,7 @@ func (s *Scanner) Scan() error {
 				return err
 			}
 			if project != nil {
-				s.ProjectsMap[path] = *project
+				projectsMap[path] = *project
 			}
 		}
 		return nil
@@ -62,7 +75,7 @@ func isProjectFile(path string) bool {
 
 func getProjectConfigurationForPath(fs fs.FS, path string) (*parsers.ProjectConfiguration, error) {
 	parser := parsers.GetParserByFilePath(path)
-	if (parser == nil) {
+	if parser == nil {
 		slog.Warn("no parser found for file", "path", path)
 		return nil, nil
 	}
