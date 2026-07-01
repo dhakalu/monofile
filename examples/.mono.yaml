@@ -1,0 +1,15 @@
+name: "Name of the monorepo project"
+# Explicitly add sources from your repository. 
+# When this is missing the tool scans for all the projects automatically
+# Here is how auto scanning works:
+#  - All folders with `.csproj` file are registered as dotnet projects
+#. - All folders with `package.json` file are registered as npm projects
+#  - All folders with pyproject.toml file are registered as python projects
+# sources: # list of directories of the source file 
+#   - name: dotnet-project
+#     path: dotnet-project
+#     lang: c#
+#   - name: python-project
+#     path: python-project
+#     lang: python
+  
