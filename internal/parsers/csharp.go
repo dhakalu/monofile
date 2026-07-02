@@ -36,10 +36,9 @@ type ProjectReference struct {
 	Include string `xml:"Include,attr"`
 }
 
-type DotnetProjectParser struct {
-}
+type DotnetProjectParser struct{}
 
-func (dps DotnetProjectParser) Parse(fileSystem fs.FS, path string) (*ProjectConfiguration, error) {
+func (DotnetProjectParser) Parse(fileSystem fs.FS, path string) (*ProjectConfiguration, error) {
 	content, err := fs.ReadFile(fileSystem, path)
 	if err != nil {
 		return nil, err
