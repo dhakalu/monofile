@@ -2,6 +2,7 @@ package monorepo
 
 import (
 	"dhakalu/monofile/internal/parsers"
+	"errors"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -9,19 +10,21 @@ import (
 )
 
 // Scanner scans the monorepo and returns a map of projects.
-
 type Scanner struct {
 	FileSystem fs.FS
 }
 
+// Option is a function that configures the Scanner.
 type Option func(*Scanner)
 
+// WithFS sets the file system to use for scanning.
 func WithFS(fileSystem fs.FS) Option {
 	return func(s *Scanner) {
 		s.FileSystem = fileSystem
 	}
 }
 
+// NewScanner creates a new Scanner with the given options.
 func NewScanner(repoRoot string, opts ...Option) (*Scanner, error) {
 	sc := &Scanner{}
 	for _, opt := range opts {
@@ -43,51 +46,74 @@ func NewScanner(repoRoot string, opts ...Option) (*Scanner, error) {
 	return sc, nil
 }
 
-func (s *Scanner) Scan() (map[string]parsers.ProjectConfiguration, error) {
+type ScanResult struct {
+	Projects map[string]parsers.ProjectConfiguration
+	Warnings []ScanWarning
+}
 
+type ScanWarning struct {
+	Path    string
+	Message string
+}
+
+// Scan scans the monorepo and returns a map of projects.
+func (s *Scanner) Scan() (*ScanResult, error) {
+	result := &ScanResult{
+		Projects: make(map[string]parsers.ProjectConfiguration),
+	}
 	projectsMap := make(map[string]parsers.ProjectConfiguration)
-	return projectsMap, fs.WalkDir(s.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(s.FileSystem, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() && isProjectFile(path) {
-			project, err := getProjectConfigurationForPath(s.FileSystem, path)
-			if err != nil {
-				slog.Error("error parsing project file", "path", path, "error", err)
-				return err
+			slog.Info("found project file", slog.String("path", path))
+			project, perr := getProjectConfigurationForPath(s.FileSystem, path)
+			if perr != nil {
+				result.Warnings = append(result.Warnings, ScanWarning{
+					Path:    path,
+					Message: perr.Error(),
+				})
+				return nil
 			}
 			if project != nil {
 				projectsMap[path] = *project
+			} else {
+				result.Warnings = append(result.Warnings, ScanWarning{
+					Path:    path,
+					Message: "prooject configuration could not be parsed",
+				})
 			}
 		}
 		return nil
 	})
+	result.Projects = projectsMap
+	return result, err
 }
 
 func isProjectFile(path string) bool {
-	var projectFiles = []string{
-		"package.json",
-		"*.csproj",
-		"pyproject.toml",
+	var exactProjectFiles = map[string]bool{
+		"package.json":   true,
+		"pyproject.toml": true,
 	}
-	for _, pattern := range projectFiles {
-		matched, err := filepath.Match(pattern, filepath.Base(path))
-		if err != nil {
-			slog.Error("error matching pattern", "pattern", pattern, "path", path, "error", err)
-			return false
-		}
-		if matched {
-			return true
-		}
+	var extentionBasedProjectFiles = map[string]bool{
+		".csproj": true,
 	}
-	return false
+	base := filepath.Base(path)
+	if exactProjectFiles[base] {
+		return true
+	}
+	ext := filepath.Ext(path)
+	return extentionBasedProjectFiles[ext]
 }
 
-func getProjectConfigurationForPath(fs fs.FS, path string) (*parsers.ProjectConfiguration, error) {
+var ErrNoParserFound = errors.New("no parser found for file")
+
+func getProjectConfigurationForPath(f fs.FS, path string) (*parsers.ProjectConfiguration, error) {
+	slog.Debug("getting parser for ", slog.String("project", path))
 	parser := parsers.GetParserByFilePath(path)
 	if parser == nil {
-		slog.Warn("no parser found for file", "path", path)
-		return nil, nil
+		return nil, ErrNoParserFound
 	}
-	return parser.Parse(fs, path)
+	return parser.Parse(f, path)
 }

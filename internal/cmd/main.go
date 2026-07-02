@@ -9,11 +9,22 @@ import (
 )
 
 func main() {
-
+	var verbose bool
 	var rootCmd = &cobra.Command{
-		Use:   "monofile",
-		Short: "monofile is a simple CLI tool for managing monorepos",
-		Args:  cobra.NoArgs,
+		Use:           "monofile",
+		Short:         "monofile is a simple CLI tool for managing monorepos",
+		Args:          cobra.NoArgs,
+		SilenceErrors: true,
+		SilenceUsage:  true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			level := slog.LevelWarn
+			if verbose {
+				level = slog.LevelDebug
+			}
+			slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+				Level: level,
+			})))
+		},
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(
 				`
@@ -28,12 +39,12 @@ Commands:
 			`)
 		},
 	}
-
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose diagnostic logging")
 	rootCmd.AddCommand(buildCmd())
 	rootCmd.AddCommand(checkCmd())
 
 	if err := rootCmd.Execute(); err != nil {
-		slog.Error("Error executing command", slog.Any("error", err))
+		fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 		os.Exit(1)
 	}
 }

@@ -11,6 +11,7 @@ const (
 
 type BuildInfo struct {
 	Status BuildStatus
+	Error  error
 }
 
 type ProjectBuilder interface {

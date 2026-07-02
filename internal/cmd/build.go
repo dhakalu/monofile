@@ -3,7 +3,6 @@ package main
 import (
 	"dhakalu/monofile/internal/builders"
 	mr "dhakalu/monofile/internal/monorepo"
-	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,20 +18,25 @@ func buildCmd() *cobra.Command {
 				cmd.PrintErrf("❌ Error creating scanner: %v", err)
 				os.Exit(1)
 			}
-			projectsMap, err := scanner.Scan()
+			scanResult, err := scanner.Scan()
 			if err != nil {
 				cmd.PrintErrf("❌ Error scanning the monorepo: %v", err)
 				os.Exit(1)
 			}
-			for _, p := range projectsMap {
+			for _, warning := range scanResult.Warnings {
+				cmd.Printf(" ⚠️ Skipped %s: %s\n", warning.Path, warning.Message)
+			}
+			cmd.Printf("Building %d projects\n", len(scanResult.Projects))
+			for _, p := range scanResult.Projects {
+				cmd.Printf("Building %s", p.Path)
 				builder := builders.GetBuilderForLanguage(p.Language)
 				if builder == nil {
-					slog.Warn("No builder found for language", slog.String("language", string(p.Language)))
+					cmd.Printf(" ⚠️ No builder found for language %s\n", string(p.Language))
 					continue
 				}
 				info := builder.Build(p)
 				if info.Status == builders.BuildStatusFailed {
-					slog.Error("Error building ", slog.String("project", p.Path))
+					cmd.PrintErrf("❌ Error building %s\n Error: %v", p.Path, info.Error)
 				}
 			}
 		},

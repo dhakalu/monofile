@@ -17,14 +17,17 @@ func checkCmd() *cobra.Command {
 				cmd.PrintErrf("❌ Error creating scanner: %v", err)
 				os.Exit(1)
 			}
-			projectsMap, err := scanner.Scan()
+			scanResult, err := scanner.Scan()
 			if err != nil {
 				cmd.PrintErrf("❌ Error scanning the monorepo: %v", err)
 				os.Exit(1)
 			}
-			versions := mr.GetDependencyVersions(projectsMap)
+			for _, warning := range scanResult.Warnings {
+				cmd.Printf("⚠️ Skipped %s: %s\n", warning.Path, warning.Message)
+			}
+			versions := mr.GetDependencyVersions(scanResult.Projects)
 			for _, conflict := range versions {
-				cmd.Printf("⚠️  Version conflict detected for package '%s':\n", conflict.Package)
+				cmd.Printf("⚠️ Version conflict detected for package '%s':\n", conflict.Package)
 
 				for version, projects := range conflict.ProjectsWithVersions {
 					cmd.Printf("  - Version '%s' used in projects:\n", version)
