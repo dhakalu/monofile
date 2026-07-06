@@ -20,5 +20,5 @@ type ProjectBuilder interface {
 	// package.json
 	// *.csproj
 	// *.pytomal
-	Build(p parsers.ProjectConfiguration) BuildInfo
+	Build(p parsers.ProjectConfiguration, args map[string]string) BuildInfo
 }
